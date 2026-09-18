@@ -1,0 +1,38 @@
+name: Create pip Release
+
+on:
+  push:
+    tags:
+      - '*.*'
+      - '*.*-dev*'
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: "[Step 1] Checkout code"
+        uses: actions/checkout@v2
+      
+      - name: "[Step 2 Check Release Type]"
+        id: check_type
+        run: |
+          if [[ "${{ github.ref_name }}" == *"-dev"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: "[Step 3] Create Release"
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: pip v.${{ github.ref }} ${{ steps.check_type.outputs.is_prerelease == 'true' && '(dev)' || '(stable)' }}
+          body_path: ${{ hashFiles('./CHANGELOG.md') != '' && './CHANGELOG.md' || '' }}
+          draft: false
+          prerelease: ${{ steps.check_type.outputs.is_prerelease == 'true' }}
