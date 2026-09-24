@@ -1,0 +1,48 @@
+---
+metadata:
+  author: JoePeach88
+  version: 1.0.0
+  lang: English
+
+helpers/pip/__init__.py:
+  pipHelper: "**Module to work with pip packages (extends default pip functionality).**"
+  pipHelper.all:
+    description: "**Method returns full list of available packages on pypi.org (this method is disabled).**"
+    items: null
+  pipHelper.search:
+    description: |
+      **Method searchs pip package on pypi.org.**
+      >NOTE: Use carefully, not search with minimal query, cause search will be longer.
+      ```
+      Usage:
+          1. Only search for package:
+              pip search <package>
+          2. Search package and install it (installs first item from list):
+              pip search <package> --install
+          3. Search package and install it specified version:
+              pip search <package> --install --version 1.0.0
+          4. Search package and install all found packages:
+              pip search <package> --install --all
+      ```
+    items:
+      none: "Found packages (0):\n"
+      limit: "Found a lot of packages ({results_len}) with name started with '{package}' only {limit} packages will be returned, if you want to improve return results set --limit flag, but information retrieve will be longer."
+      found: "Found packages ({result_data_len}):\n"
+      installed: "Package {package} successfully installed."
+      not_installed: "Package {package} not installed, see error above."
+  pipHelper.info:
+    description: |
+      **Display information about a package on pypi.org.**
+      ```
+      Usage:
+          pip info <package>
+      ```
+    items:
+      not_found: "Package '{package}' not found."
+      failed: "Failed to retrieve package '{package}': {exc}"
+      info: |
+        Name: {name}
+        Author: {author}
+        Required Python version: {required_python}
+        Last version: {last_version}
+        Other releases:\n{releases_text}

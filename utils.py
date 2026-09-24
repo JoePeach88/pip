@@ -1,7 +1,7 @@
 import re
 import sys
 import subprocess
-from helpers import print_message, PIP_BREAK_SYSTEM_PACKAGES, PIP_PROXY, ERROR
+from helpers import print_message, PIP_PROXY, ERROR
 
 
 
@@ -32,8 +32,6 @@ def pip_install(package: str, version: str = None):
 
     command = [sys.executable, "-m", "pip", "install", package if not version else f"{package}=={version}"]
 
-    if PIP_BREAK_SYSTEM_PACKAGES:
-        command.append("--break-system-packages")
     if PIP_PROXY:
         command.extend(["--proxy", PIP_PROXY])
 

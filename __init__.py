@@ -5,7 +5,7 @@ import psutil
 import threading
 from requests.exceptions import HTTPError, RequestException
 from helpers.pip.utils import process_package, pip_install
-from helpers import print_message, print_choices, print_choice, spinning_loader, SUCCESS, INFO, WARNING, ERROR
+from helpers import print_message, print_choices, print_choice, spinning_loader, SUCCESS, INFO, WARNING, ERROR, lang
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 __module_disabled_methods__ = ['all']
 __module_name__ = 'pipHelper'
 __module_author__ = 'JoePeach88'
-__module_version__ = '1.0.0'
+__module_version__ = '1.1.0'
 __module_link__ = 'https://github.com/JoePeach88/pip'
 __module_category__ = []
 __module_compatibility__ = ['all']
@@ -23,9 +23,6 @@ __methods_static_aliases__ = {}
 
 
 class pipHelper:
-    """
-    **Module to work with pip packages (extends default pip functionality).**
-    """
     def __init__(self, settings: dict):
         self.settings = settings
         self.pypi_url = 'https://pypi.org'
@@ -42,9 +39,6 @@ class pipHelper:
         self._package_names_sorted = None
 
     def all(self):
-        """
-        **Method returns full list of available packages on pypi.org (this method is disabled).**
-        """
         if self._packages_sorted is not None:
             return self._packages_sorted
 
@@ -64,25 +58,10 @@ class pipHelper:
         return parsed_packages
 
     def search(self, package: str, install: bool = False, all: bool = False, version: str = None, limit: int = 200, pretty: bool = True):
-        """
-        **Method searchs pip package on pypi.org.**
-        >NOTE: Use carefully, not search with minimal query, cause search will be longer.
-        ```
-        Usage:
-            1. Only search for package:
-                pip search <package>
-            2. Search package and install it (installs first item from list):
-                pip search <package> --install
-            3. Search package and install it specified version:
-                pip search <package> --install --version 1.0.0
-            4. Search package and install all found packages:
-                pip search <package> --install --all
-        ```
-        """
         limit = int(limit)
         query = package.strip().lower()
         if not query:
-            return "Found packages (0):\n" if pretty else []
+            return lang.get(key='none') if pretty else []
 
         packages = self.all()
         names = self._package_names_sorted or []
@@ -93,7 +72,7 @@ class pipHelper:
         new_results = []
         result_data = []
         if len(results) > limit:
-            print_message(f"Found a lot of packages ({len(results)}) with name started with '{package}' only {limit} packages will be returned, if you want to improve return results set --limit flag, but information retrieve will be longer.", WARNING, force=True)
+            print_message(lang.get(key='limit', results_len=len(results), package=package, limit=limit), WARNING, force=True)
         
         limited_results = results[:limit]
         # Retrieving package info with thread
@@ -131,33 +110,26 @@ class pipHelper:
             for item in new_results:
                 result_data.append({"name": item["name"], "last_version": item["last_version"], "author": item["author_email"]})
             if len(result_data) == 0:
-                return "Found packages (0):\n"
+                return lang.get(key='none')
             df = pd.DataFrame(result_data)
-            return f"Found packages ({len(result_data)}):\n" + df.to_string(index=False, justify='right')
+            return lang.get(key='found', result_data_len=len(result_data)) + df.to_string(index=False, justify='right')
         else:
             if not all:
                 first_package = new_results[0]['name']
                 package_installation = pip_install(first_package, version)
                 if package_installation:
-                    return f"Package {first_package} successfully installed."
+                    return lang.get(key='installed', package=first_package)
                 else:
-                    return f"Package {first_package} not installed, see error above."
+                    return lang.get(key='not_installed', package=first_package)
             else:
                 for install_package in new_results:
                     package_installation = pip_install(install_package['name'], version)
                     if package_installation:
-                        return f"Package {install_package['name']} successfully installed."
+                        return lang.get(key='installed', package=install_package['name'])
                     else:
-                        return f"Package {install_package['name']} not installed, see error above."
+                        return lang.get(key='not_installed', package=install_package['name'])
 
     def info(self, package: str, pretty: bool = True):
-        """
-        **Display information about a package on pypi.org.**
-        ```
-        Usage:
-            pip info <package>
-        ```
-        """
         package = package.strip()
         if not package:
             return "Package name is empty." if pretty else None
@@ -176,9 +148,9 @@ class pipHelper:
             )
             response.raise_for_status()
         except HTTPError:
-            return f"Package '{package}' not found." if pretty else None
+            return lang.get(key='not_found', package=package) if pretty else None
         except RequestException as exc:
-            return f"Failed to retrieve package '{package}': {exc}" if pretty else None
+            return lang.get(key='failed', package=package, exc=exc) if pretty else None
 
         payload = response.json()
         info_data = payload.get("info", {})
@@ -198,10 +170,4 @@ class pipHelper:
             return result
 
         releases_text = "\n".join(releases) if releases else "None"
-        return (
-            f"Name: {result['name']}\n"
-            f"Author: {result['author_email']}\n"
-            f"Required Python version: {result['requires_python']}\n"
-            f"Last version: {result['last_version']}\n"
-            f"Other releases:\n{releases_text}"
-        )
+        return lang.get(key='info', name=result['name'], author=result['author_email'], required_python=result['requires_python'], last_version=result['last_version'], releases_text=releases_text)
